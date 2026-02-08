@@ -1,0 +1,19 @@
+# Don't copy into image (mount at run instead)
+.env
+.env.*
+!.env.example
+linkedin_user_data/
+*.log
+# Local dev
+.venv/
+venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.git/
+.gitignore
+# Optional: keep repo smaller
+*.pdf
+assets/
+INSTALL_FIX.md
+test_gemini.py

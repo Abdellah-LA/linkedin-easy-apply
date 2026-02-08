@@ -1,0 +1,31 @@
+# One run = one user. For multiple users, each user runs their own stack (own machine or own cloud deploy = different IP).
+services:
+  linkedin-applier:
+    build: .
+    image: linkedin-easy-apply:latest
+    container_name: linkedin-applier
+    env_file: .env
+    environment:
+      - HEADLESS=true
+    volumes:
+      # Persist LinkedIn session (cookies) so you don't log in every run
+      - linkedin_user_data:/app/linkedin_user_data
+      # Persist web setup (form config + uploaded CV)
+      - app_data:/app/data
+      # Optional: mount folder with your CV/resume so RESUME_PATH and CV_PATH point inside container
+      - ./cv_resume:/app/cv_resume:ro
+    # Uncomment and set if your .env has paths like ./cv_resume/CV.pdf
+    # environment:
+    #   - RESUME_PATH=/app/cv_resume/your-resume.pdf
+    #   - CV_PATH=/app/cv_resume/your-cv.pdf
+    ports:
+      - "8000:8000"
+    restart: "no"
+    # Recommended for Chromium in Docker
+    init: true
+    # Optional: limit memory on free-tier hosts
+    # mem_limit: 1g
+
+volumes:
+  linkedin_user_data:
+  app_data:

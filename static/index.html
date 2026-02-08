@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>LinkedIn Easy Apply</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f3f6f8; padding: 1rem; }
+    .card { max-width: 520px; width: 100%; margin: 0 auto; background: #fff; border-radius: 12px; box-shadow: 0 4px 24px rgba(0,0,0,.08); padding: 1.5rem 2rem; }
+    h1 { margin: 0 0 0.5rem; font-size: 1.5rem; color: #0a66c2; }
+    .sub { color: #666; font-size: 0.9rem; margin-bottom: 1rem; }
+    .screen { display: none; }
+    .screen.on { display: block; }
+    label { display: block; margin-top: 0.75rem; font-weight: 500; color: #333; font-size: 0.9rem; }
+    input[type=text], input[type=email], input[type=number], select { width: 100%; padding: 0.5rem 0.6rem; border: 1px solid #ccc; border-radius: 6px; font-size: 1rem; margin-top: 0.25rem; }
+    input[type=file] { margin-top: 0.25rem; font-size: 0.9rem; }
+    .ats-tips { background: #e8f4fd; border: 1px solid #0a66c2; border-radius: 8px; padding: 0.75rem 1rem; margin: 1rem 0; font-size: 0.85rem; color: #333; }
+    .ats-tips strong { color: #0a66c2; }
+    .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+    @media (max-width: 480px) { .row2 { grid-template-columns: 1fr; } }
+    .btns { display: flex; gap: 0.75rem; flex-wrap: wrap; margin-top: 1.25rem; }
+    button { padding: 0.75rem 1.25rem; border: none; border-radius: 8px; font-size: 1rem; cursor: pointer; font-weight: 500; }
+    .btn-primary { background: #0a66c2; color: #fff; }
+    .btn-primary:hover { background: #004182; }
+    .btn-primary:disabled { background: #ccc; cursor: not-allowed; }
+    .btn-danger { background: #d32f2f; color: #fff; }
+    .btn-danger:hover { background: #b71c1c; }
+    .btn-secondary { background: #e0e0e0; color: #333; }
+    .btn-secondary:hover { background: #d0d0d0; }
+    .status { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem; padding: 0.75rem; border-radius: 8px; background: #f0f7ff; }
+    .status.running { background: #e8f5e9; }
+    .status.error { background: #ffebee; }
+    .dot { width: 10px; height: 10px; border-radius: 50%; background: #9e9e9e; }
+    .status.running .dot { background: #4caf50; animation: pulse 1.5s ease-in-out infinite; }
+    .status.error .dot { background: #f44336; }
+    @keyframes pulse { 0%,100%{ opacity:1 } 50%{ opacity:.5 } }
+    .count { font-size: 1.25rem; font-weight: 600; color: #333; margin-bottom: 1rem; }
+    .error-msg { color: #c62828; font-size: 0.9rem; margin-top: 0.5rem; }
+    .link { color: #0a66c2; cursor: pointer; text-decoration: underline; font-size: 0.9rem; margin-top: 0.5rem; display: inline-block; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>LinkedIn Easy Apply</h1>
+
+    <div id="setupScreen" class="screen">
+      <p class="sub">Fill your profile and upload an ATS-friendly CV. Then you can start the bot.</p>
+      <div class="ats-tips">
+        <strong>ATS-friendly CV tips</strong>: Use a clear layout with headings (Experience, Education, Skills). Prefer PDF. Include keywords from job descriptions. Avoid images and complex tables so applicant tracking systems can read your CV.
+      </div>
+      <form id="setupForm">
+        <label>First name *</label>
+        <input type="text" name="easy_apply_first_name" required placeholder="e.g. John">
+        <label>Last name *</label>
+        <input type="text" name="easy_apply_last_name" required placeholder="e.g. Doe">
+        <label>Email (for Easy Apply contact) *</label>
+        <input type="email" name="easy_apply_email" required placeholder="you@example.com">
+        <div class="row2">
+          <div>
+            <label>Job search country *</label>
+            <input type="text" name="job_search_country" required placeholder="e.g. UAE, Canada">
+          </div>
+          <div>
+            <label>Job keywords *</label>
+            <input type="text" name="job_search_keywords" required placeholder="e.g. software engineer java">
+          </div>
+        </div>
+        <label>Default city (location in forms)</label>
+        <input type="text" name="default_location_city" placeholder="e.g. Casablanca">
+        <div class="row2">
+          <div>
+            <label>Work authorization in search country?</label>
+            <select name="work_authorization_answer">
+              <option value="Yes">Yes</option>
+              <option value="No" selected>No</option>
+            </select>
+          </div>
+          <div>
+            <label>Need sponsorship?</label>
+            <select name="work_need_sponsorship_answer">
+              <option value="Yes" selected>Yes</option>
+              <option value="No">No</option>
+            </select>
+          </div>
+        </div>
+        <label>Work authorization country (where you search)</label>
+        <input type="text" name="work_authorization_country" placeholder="e.g. Canada">
+        <label>Years of experience (default)</label>
+        <input type="number" name="easy_apply_years_default" value="3" min="0" max="99">
+        <div class="row2">
+          <div>
+            <label>Current company</label>
+            <input type="text" name="easy_apply_current_company" placeholder="optional">
+          </div>
+          <div>
+            <label>Current title</label>
+            <input type="text" name="easy_apply_current_title" placeholder="e.g. Software Engineer">
+          </div>
+        </div>
+        <label>Gender (form option: Male / Female / Other)</label>
+        <input type="text" name="easy_apply_gender" placeholder="e.g. Male">
+        <label>Certifications (comma-separated)</label>
+        <input type="text" name="easy_apply_certifications" placeholder="e.g. AWS, Docker">
+        <label>Hybrid work? (Yes/No)</label>
+        <select name="easy_apply_hybrid_answer">
+          <option value="Yes" selected>Yes</option>
+          <option value="No">No</option>
+        </select>
+        <div class="row2">
+          <div>
+            <label>Min delay (sec)</label>
+            <input type="number" name="min_delay_sec" value="10" min="1" max="60">
+          </div>
+          <div>
+            <label>Max delay (sec)</label>
+            <input type="number" name="max_delay_sec" value="30" min="1" max="120">
+          </div>
+        </div>
+        <label>CV / Resume (PDF, ATS-friendly) *</label>
+        <input type="file" name="cv_file" accept=".pdf" required>
+        <label style="margin-top:0.5rem;">Gemini API key (optional; can be set on server)</label>
+        <input type="text" name="gemini_api_key" placeholder="Leave empty if set in server env">
+        <label>Groq API key (optional)</label>
+        <input type="text" name="groq_api_key" placeholder="Leave empty if set in server env">
+        <div class="btns">
+          <button type="submit" class="btn-primary">Save and continue</button>
+        </div>
+      </form>
+    </div>
+
+    <div id="dashboardScreen" class="screen">
+      <p class="sub">Start the bot to apply to jobs one by one. One run per deployment.</p>
+      <div id="status" class="status">
+        <span class="dot"></span>
+        <span id="statusText">Idle</span>
+      </div>
+      <div class="count">Applied this run: <span id="count">0</span></div>
+      <div id="error" class="error-msg" style="display:none"></div>
+      <div class="btns">
+        <button id="btnStart" class="btn-primary">Start</button>
+        <button id="btnStop" class="btn-danger" disabled>Stop</button>
+        <button id="btnEditSetup" class="btn-secondary">Edit setup</button>
+      </div>
+      <a class="link" id="linkBackToSetup" style="display:none;">← Back to setup</a>
+    </div>
+  </div>
+
+  <script>
+    const setupScreen = document.getElementById('setupScreen');
+    const dashboardScreen = document.getElementById('dashboardScreen');
+    const setupForm = document.getElementById('setupForm');
+    const statusEl = document.getElementById('status');
+    const statusText = document.getElementById('statusText');
+    const countEl = document.getElementById('count');
+    const errorEl = document.getElementById('error');
+    const btnStart = document.getElementById('btnStart');
+    const btnStop = document.getElementById('btnStop');
+    const btnEditSetup = document.getElementById('btnEditSetup');
+    const linkBackToSetup = document.getElementById('linkBackToSetup');
+
+    function showScreen(which) {
+      setupScreen.classList.toggle('on', which === 'setup');
+      dashboardScreen.classList.toggle('on', which === 'dashboard');
+    }
+
+    const configKeyToInputName = {
+      EASY_APPLY_FIRST_NAME: 'easy_apply_first_name', EASY_APPLY_LAST_NAME: 'easy_apply_last_name',
+      EASY_APPLY_EMAIL: 'easy_apply_email', JOB_SEARCH_COUNTRY: 'job_search_country', JOB_SEARCH_KEYWORDS: 'job_search_keywords',
+      DEFAULT_LOCATION_CITY: 'default_location_city', WORK_AUTHORIZATION_ANSWER: 'work_authorization_answer',
+      WORK_NEED_SPONSORSHIP_ANSWER: 'work_need_sponsorship_answer', WORK_AUTHORIZATION_COUNTRY: 'work_authorization_country',
+      EASY_APPLY_YEARS_DEFAULT: 'easy_apply_years_default', EASY_APPLY_CURRENT_COMPANY: 'easy_apply_current_company',
+      EASY_APPLY_CURRENT_TITLE: 'easy_apply_current_title', EASY_APPLY_GENDER: 'easy_apply_gender',
+      EASY_APPLY_CERTIFICATIONS: 'easy_apply_certifications', EASY_APPLY_HYBRID_ANSWER: 'easy_apply_hybrid_answer',
+      MIN_DELAY_SEC: 'min_delay_sec', MAX_DELAY_SEC: 'max_delay_sec', GEMINI_API_KEY: 'gemini_api_key', GROQ_API_KEY: 'groq_api_key'
+    };
+
+    async function loadSetup() {
+      const r = await fetch('/api/setup');
+      const data = await r.json();
+      if (data.configured) {
+        showScreen('dashboard');
+        if (data.config) {
+          Object.keys(configKeyToInputName).forEach(k => {
+            const name = configKeyToInputName[k];
+            const el = setupForm.elements[name];
+            if (el && data.config[k] != null) el.value = data.config[k];
+          });
+        }
+      } else {
+        showScreen('setup');
+      }
+    }
+
+    setupForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const fd = new FormData(setupForm);
+      if (!fd.get('cv_file') || !fd.get('cv_file').name) { alert('Please upload a PDF CV'); return; }
+      try {
+        const r = await fetch('/api/setup', { method: 'POST', body: fd });
+        if (!r.ok) { const j = await r.json(); alert(j.detail || 'Save failed'); return; }
+        showScreen('dashboard');
+        fetchStatus();
+      } catch (err) { alert('Request failed'); }
+    });
+
+    btnEditSetup.onclick = () => { showScreen('setup'); linkBackToSetup.style.display = 'inline'; };
+    linkBackToSetup.onclick = () => { showScreen('dashboard'); linkBackToSetup.style.display = 'none'; };
+
+    function setState(data) {
+      const running = !!data.running;
+      statusEl.classList.remove('running', 'error');
+      if (data.error) { statusEl.classList.add('error'); statusText.textContent = 'Error'; errorEl.style.display = 'block'; errorEl.textContent = data.error; }
+      else { errorEl.style.display = 'none'; statusEl.classList.toggle('running', running); statusText.textContent = running ? 'Running' : 'Idle'; }
+      countEl.textContent = data.applied_count ?? 0;
+      btnStart.disabled = running;
+      btnStop.disabled = !running;
+    }
+
+    async function fetchStatus() {
+      try {
+        const r = await fetch('/api/status');
+        const data = await r.json();
+        setState(data);
+      } catch (e) { statusText.textContent = 'Offline'; }
+    }
+
+    btnStart.onclick = async () => {
+      try {
+        const r = await fetch('/api/start', { method: 'POST' });
+        if (r.ok) fetchStatus();
+        else { const j = await r.json(); alert(j.detail || 'Start failed'); }
+      } catch (e) { alert('Request failed'); }
+    };
+
+    btnStop.onclick = async () => {
+      try {
+        await fetch('/api/stop', { method: 'POST' });
+        fetchStatus();
+      } catch (e) { alert('Request failed'); }
+    };
+
+    loadSetup();
+    setInterval(() => { if (dashboardScreen.classList.contains('on')) fetchStatus(); }, 3000);
+  </script>
+</body>
+</html>

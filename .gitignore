@@ -1,0 +1,8 @@
+.env
+*.log
+linkedin_user_data/
+__pycache__/
+*.pyc
+.venv/
+venv/
+resume.pdf
