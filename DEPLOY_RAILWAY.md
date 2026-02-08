@@ -76,6 +76,8 @@ git push -u origin main
 
 In Railway: **Your service → Variables** (or **Environment**). Add variables so the app can run. You can copy these from your local `.env`; **do not** paste secrets into this doc.
 
+**Optional: skip the Setup form** — If you set all variables here (including `RESUME_PATH` and `CV_PATH` pointing to a file inside the container), the app will show the dashboard directly and you can Start without filling the form. To do that, mount a volume with your CV (e.g. at `/app/cv_resume`) and set `RESUME_PATH=/app/cv_resume/your-resume.pdf` and `CV_PATH=/app/cv_resume/your-resume.pdf`. Otherwise, use the web form once to upload your CV.
+
 **Required / recommended:**
 
 | Variable | Example | Note |
@@ -208,3 +210,22 @@ Again, do the first LinkedIn login locally and copy the session into the volume 
 - [ ] Click **Start** on the dashboard to run the bot
 
 After that, you can share the link so others can use the same run, or each user can deploy their own app for their own account.
+
+---
+
+## If the service shows "Crashed"
+
+1. **Check the logs**  
+   In Railway: open your service → **Deployments** → click the latest deployment → **View Logs** (or **Logs** tab). The last lines usually show the Python traceback or error (e.g. port in use, missing env, import error).
+
+2. **Set these variables (required on Railway)**  
+   - **`HEADLESS`** = `true` (no display in the cloud).  
+   - **`PORT`** – Railway sets this automatically; the Dockerfile now uses it. You don’t need to add it unless you want to override.
+
+3. **Fix or remove Dify variables**  
+   If you see **`DIFY_API_KEY`** with a placeholder like `your_generated_app_key_here`:
+   - **If you use Dify:** In [Dify](https://dify.ai), create an API key for your workflow and set **`DIFY_API_KEY`** to that value in Railway Variables.  
+   - **If you don’t use Dify:** The Easy Apply bot can run without Dify (it uses Gemini for CV answers). You can **remove** `DIFY_API_KEY`, `DIFY_BASE_URL`, `DIFY_CV_FILE_ID`, and `DIFY_USER` from Railway Variables, or leave them empty. The app will skip Dify and use Gemini.
+
+4. **Redeploy**  
+   After changing variables, trigger a new deployment (e.g. **Deploy** → **Redeploy** or push a commit). The Dockerfile was updated so the app listens on Railway’s **PORT**; push that change if you haven’t already.

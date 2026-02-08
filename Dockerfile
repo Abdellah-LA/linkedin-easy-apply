@@ -5,7 +5,7 @@ WORKDIR /app
 
 # Install Python deps (playwright already in image, pip will skip or upgrade)
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt && pip install --no-cache-dir python-multipart
 
 # App code (config, main, applier, web, etc.)
 COPY config.py logger_config.py main.py daily_limit.py web_app.py ./
@@ -21,7 +21,8 @@ COPY static/ ./static/
 ENV HEADLESS=true
 
 # Avoid zombie processes; improve Chromium stability
-# Web app: serve on port 8000 so users can start/stop from browser. For CLI-only run: docker run ... python -u main.py
+# Web app: use PORT from Railway/Render (default 8000). For CLI-only run: docker run ... python -u main.py
 ENV PORT=8000
 EXPOSE 8000
-ENTRYPOINT ["python", "-u", "-m", "uvicorn", "web_app:app", "--host", "0.0.0.0", "--port", "8000"]
+# Shell form so Railway's PORT is used when set
+ENTRYPOINT ["sh", "-c", "exec python -u -m uvicorn web_app:app --host 0.0.0.0 --port ${PORT:-8000}"]

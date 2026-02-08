@@ -1,10 +1,12 @@
 """
 Web app: setup form (profile + CV upload), then start/stop the Easy Apply loop.
 One deployment = one LinkedIn account; all visitors share the same run.
+If env vars are set (e.g. Railway Variables from .env), the form is optional.
 """
 import asyncio
 import importlib
 import json
+import os
 from pathlib import Path
 
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
@@ -143,28 +145,42 @@ def _ensure_data_dirs() -> None:
     UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
 
 
+@app.get("/health")
+def health():
+    """Health check for Railway/Render (returns 200 if app is up)."""
+    return {"status": "ok"}
+
+
 @app.get("/", response_class=HTMLResponse)
 def index():
     return _get_html()
 
 
+def _is_configured_from_env() -> bool:
+    """True if we have enough in env to run (no form needed)."""
+    has_resume = bool(os.getenv("RESUME_PATH") or os.getenv("CV_PATH"))
+    has_email = bool(os.getenv("EASY_APPLY_EMAIL"))
+    return has_resume and has_email
+
+
 @app.get("/api/setup")
 def api_setup_get():
-    """Return whether setup is done and current config (for pre-fill). Passwords/keys masked."""
-    if not OVERRIDES_FILE.exists():
-        return {"configured": False, "config": {}}
-    try:
-        data = json.loads(OVERRIDES_FILE.read_text(encoding="utf-8"))
-        # Mask long secrets for display
-        out = {}
-        for k, v in data.items():
-            if k in ("GEMINI_API_KEY", "GROQ_API_KEY") and v and len(str(v)) > 8:
-                out[k] = str(v)[:4] + "…"
-            else:
-                out[k] = v
-        return {"configured": True, "config": out}
-    except Exception:
-        return {"configured": False, "config": {}}
+    """Return whether setup is done (form or env) and current config (for pre-fill)."""
+    if OVERRIDES_FILE.exists():
+        try:
+            data = json.loads(OVERRIDES_FILE.read_text(encoding="utf-8"))
+            out = {}
+            for k, v in data.items():
+                if k in ("GEMINI_API_KEY", "GROQ_API_KEY") and v and len(str(v)) > 8:
+                    out[k] = str(v)[:4] + "…"
+                else:
+                    out[k] = v
+            return {"configured": True, "config": out}
+        except Exception:
+            pass
+    if _is_configured_from_env():
+        return {"configured": True, "config": {}}
+    return {"configured": False, "config": {}}
 
 
 @app.post("/api/setup")
@@ -243,26 +259,27 @@ async def api_start():
     global _run_task, _stop_event
     if _run_state["running"]:
         raise HTTPException(status_code=409, detail="Run already in progress")
-    if not OVERRIDES_FILE.exists():
-        raise HTTPException(status_code=400, detail="Please complete Setup first (profile + CV upload).")
+    if not OVERRIDES_FILE.exists() and not _is_configured_from_env():
+        raise HTTPException(status_code=400, detail="Please complete Setup first (profile + CV upload) or set RESUME_PATH/CV_PATH and EASY_APPLY_EMAIL in Variables.")
 
-    import config
-    config.apply_overrides_from_file()
-    import applier
-    import browser_engine
-    import cv_reader
-    import gemini_cv
-    import work_authorization
-    import scraper
     import main as main_mod
-    importlib.reload(config)
-    importlib.reload(applier)
-    importlib.reload(browser_engine)
-    importlib.reload(cv_reader)
-    importlib.reload(gemini_cv)
-    importlib.reload(work_authorization)
-    importlib.reload(scraper)
-    importlib.reload(main_mod)
+    if OVERRIDES_FILE.exists():
+        import config
+        config.apply_overrides_from_file()
+        import applier
+        import browser_engine
+        import cv_reader
+        import gemini_cv
+        import work_authorization
+        import scraper
+        importlib.reload(config)
+        importlib.reload(applier)
+        importlib.reload(browser_engine)
+        importlib.reload(cv_reader)
+        importlib.reload(gemini_cv)
+        importlib.reload(work_authorization)
+        importlib.reload(scraper)
+        importlib.reload(main_mod)
 
     _run_state["running"] = True
     _run_state["applied_count"] = 0
