@@ -95,6 +95,7 @@ _config_overrides_path: str = os.getenv(
 
 def _refresh_from_env() -> None:
     """Re-read all config from os.environ (used after apply_overrides_from_file)."""
+    # Multiple global lines (parenthesized form causes SyntaxError on some Python/envs)
     global DIFY_API_KEY, DIFY_BASE_URL, DIFY_CV_FILE_ID, DIFY_USER
     global JOB_SEARCH_KEYWORDS, JOB_SEARCH_COUNTRY, LINKEDIN_JOB_SEARCH_URL, LINKEDIN_BASE_URL
     global RESUME_PATH, CV_PATH, EASY_APPLY_EMAIL, EASY_APPLY_FIRST_NAME, EASY_APPLY_LAST_NAME
