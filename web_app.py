@@ -257,34 +257,47 @@ def api_status():
     }
 
 
+def _run_start_steps():
+    """Run start steps and raise with a clear step name on failure."""
+    import main as main_mod
+    if OVERRIDES_FILE.exists():
+        try:
+            import config
+            config.apply_overrides_from_file()
+        except Exception as e:
+            raise RuntimeError(f"apply_overrides: {e!s}") from e
+        for name, mod in [
+            ("config", "config"),
+            ("applier", "applier"),
+            ("browser_engine", "browser_engine"),
+            ("cv_reader", "cv_reader"),
+            ("gemini_cv", "gemini_cv"),
+            ("work_authorization", "work_authorization"),
+            ("scraper", "scraper"),
+            ("main", "main"),
+        ]:
+            try:
+                m = __import__(mod)
+                importlib.reload(m)
+            except Exception as e:
+                raise RuntimeError(f"reload {name}: {e!s}") from e
+        main_mod = __import__("main")
+    return main_mod
+
+
 @app.post("/api/start")
 async def api_start():
     global _run_task, _stop_event
     if _run_state["running"]:
         raise HTTPException(status_code=409, detail="Run already in progress")
     if not OVERRIDES_FILE.exists() and not _is_configured_from_env():
-        raise HTTPException(status_code=400, detail="Please complete Setup first (profile + CV upload) or set RESUME_PATH/CV_PATH and EASY_APPLY_EMAIL in Variables.")
+        raise HTTPException(
+            status_code=400,
+            detail="Please complete Setup first (profile + CV upload) or set RESUME_PATH, CV_PATH and EASY_APPLY_EMAIL in Railway Variables.",
+        )
 
     try:
-        import main as main_mod
-        if OVERRIDES_FILE.exists():
-            import config
-            config.apply_overrides_from_file()
-            import applier
-            import browser_engine
-            import cv_reader
-            import gemini_cv
-            import work_authorization
-            import scraper
-            importlib.reload(config)
-            importlib.reload(applier)
-            importlib.reload(browser_engine)
-            importlib.reload(cv_reader)
-            importlib.reload(gemini_cv)
-            importlib.reload(work_authorization)
-            importlib.reload(scraper)
-            importlib.reload(main_mod)
-
+        main_mod = _run_start_steps()
         _run_state["running"] = True
         _run_state["applied_count"] = 0
         _run_state["error"] = None
@@ -299,7 +312,10 @@ async def api_start():
     except Exception as e:
         _run_state["running"] = False
         _run_state["error"] = str(e)
-        raise HTTPException(status_code=500, detail=f"Start failed: {e!s}") from e
+        detail = f"Start failed: {e!s}"
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=detail) from e
 
 
 @app.post("/api/stop")

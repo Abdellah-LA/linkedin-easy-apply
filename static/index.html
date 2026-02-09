@@ -231,10 +231,12 @@
         if (r.ok) { fetchStatus(); return; }
         const text = await r.text();
         let msg = 'Start failed';
-        try { const j = JSON.parse(text); msg = j.detail || msg; } catch (_) { if (text) msg = text.slice(0, 400); }
+        try { const j = JSON.parse(text); msg = j.detail || msg; } catch (_) { if (text) msg = text.slice(0, 500); }
+        fetchStatus();
         alert(msg);
       } catch (e) {
-        alert('Request failed: ' + (e.message || String(e)) + '. Check the Network tab: select the failed POST request and open the Response panel.');
+        fetchStatus();
+        alert('Request failed: ' + (e.message || String(e)) + '. Open Network tab, click the red POST request, then open Response to see the server error.');
       }
     };
 
