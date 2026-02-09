@@ -1,6 +1,7 @@
 .env
 *.log
 linkedin_user_data/
+data/
 __pycache__/
 *.pyc
 .venv/

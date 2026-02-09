@@ -121,9 +121,12 @@ def _default_index_html() -> str:
     btnStart.onclick = async () => {
       try {
         const r = await fetch('/api/start', { method: 'POST' });
-        if (r.ok) await fetchStatus();
-        else { const j = await r.json(); alert(j.detail || 'Start failed'); }
-      } catch (e) { alert('Request failed'); }
+        if (r.ok) { await fetchStatus(); return; }
+        const text = await r.text();
+        let msg = 'Start failed';
+        try { const j = JSON.parse(text); msg = j.detail || msg; } catch (_) { if (text) msg = text.slice(0, 300); }
+        alert(msg);
+      } catch (e) { alert('Request failed: ' + (e.message || e)); }
     };
 
     btnStop.onclick = async () => {
@@ -262,36 +265,41 @@ async def api_start():
     if not OVERRIDES_FILE.exists() and not _is_configured_from_env():
         raise HTTPException(status_code=400, detail="Please complete Setup first (profile + CV upload) or set RESUME_PATH/CV_PATH and EASY_APPLY_EMAIL in Variables.")
 
-    import main as main_mod
-    if OVERRIDES_FILE.exists():
-        import config
-        config.apply_overrides_from_file()
-        import applier
-        import browser_engine
-        import cv_reader
-        import gemini_cv
-        import work_authorization
-        import scraper
-        importlib.reload(config)
-        importlib.reload(applier)
-        importlib.reload(browser_engine)
-        importlib.reload(cv_reader)
-        importlib.reload(gemini_cv)
-        importlib.reload(work_authorization)
-        importlib.reload(scraper)
-        importlib.reload(main_mod)
+    try:
+        import main as main_mod
+        if OVERRIDES_FILE.exists():
+            import config
+            config.apply_overrides_from_file()
+            import applier
+            import browser_engine
+            import cv_reader
+            import gemini_cv
+            import work_authorization
+            import scraper
+            importlib.reload(config)
+            importlib.reload(applier)
+            importlib.reload(browser_engine)
+            importlib.reload(cv_reader)
+            importlib.reload(gemini_cv)
+            importlib.reload(work_authorization)
+            importlib.reload(scraper)
+            importlib.reload(main_mod)
 
-    _run_state["running"] = True
-    _run_state["applied_count"] = 0
-    _run_state["error"] = None
-    _stop_event = asyncio.Event()
-    _run_task = asyncio.create_task(main_mod.main(state=_run_state, stop_event=_stop_event))
+        _run_state["running"] = True
+        _run_state["applied_count"] = 0
+        _run_state["error"] = None
+        _stop_event = asyncio.Event()
+        _run_task = asyncio.create_task(main_mod.main(state=_run_state, stop_event=_stop_event))
 
-    def _done(_t):
+        def _done(_t):
+            _run_state["running"] = False
+
+        _run_task.add_done_callback(_done)
+        return {"status": "started"}
+    except Exception as e:
         _run_state["running"] = False
-
-    _run_task.add_done_callback(_done)
-    return {"status": "started"}
+        _run_state["error"] = str(e)
+        raise HTTPException(status_code=500, detail=f"Start failed: {e!s}") from e
 
 
 @app.post("/api/stop")

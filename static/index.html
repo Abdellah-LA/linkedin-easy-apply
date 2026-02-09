@@ -228,9 +228,14 @@
     btnStart.onclick = async () => {
       try {
         const r = await fetch('/api/start', { method: 'POST' });
-        if (r.ok) fetchStatus();
-        else { const j = await r.json(); alert(j.detail || 'Start failed'); }
-      } catch (e) { alert('Request failed'); }
+        if (r.ok) { fetchStatus(); return; }
+        const text = await r.text();
+        let msg = 'Start failed';
+        try { const j = JSON.parse(text); msg = j.detail || msg; } catch (_) { if (text) msg = text.slice(0, 400); }
+        alert(msg);
+      } catch (e) {
+        alert('Request failed: ' + (e.message || String(e)) + '. Check the Network tab: select the failed POST request and open the Response panel.');
+      }
     };
 
     btnStop.onclick = async () => {
