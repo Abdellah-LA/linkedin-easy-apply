@@ -1,6 +1,7 @@
 # Required by FastAPI for form data and file upload (must be installed)
 python-multipart>=0.0.6
-playwright>=1.40.0
+# Pin to match Docker image mcr.microsoft.com/playwright/python:v1.49.0-noble (avoid browser path mismatch)
+playwright==1.49.0
 playwright-stealth>=2.0.0
 python-dotenv>=1.0.0
 requests>=2.31.0
